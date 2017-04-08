@@ -43,6 +43,7 @@ bool generic_morpho::load(istream& is) {
 
     // Load dictionary
     dictionary.load(data);
+    mi_guesser.setDictionary(&dictionary);
 
     // Optionally statistical guesser if present
     statistical_guesser.reset();
@@ -66,10 +67,12 @@ int generic_morpho::analyze(string_piece form, guesser_mode guesser, vector<tagg
     string form_lc;   // all lowercase
     generate_casing_variants(form, form_uclc, form_lc);
 
+    mi_guesser.analyze(lemmas, form.str);
+
     // Start by analysing using the dictionary and all casing variants.
-    dictionary.analyze(form, lemmas);
-    if (!form_uclc.empty()) dictionary.analyze(form_uclc, lemmas);
-    if (!form_lc.empty()) dictionary.analyze(form_lc, lemmas);
+//    dictionary.analyze(form, lemmas);
+//    if (!form_uclc.empty()) dictionary.analyze(form_uclc, lemmas);
+//    if (!form_lc.empty()) dictionary.analyze(form_lc, lemmas);
     if (!lemmas.empty()) return NO_GUESSER;
 
     // Then call analyze_special to handle numbers, punctuation and symbols.

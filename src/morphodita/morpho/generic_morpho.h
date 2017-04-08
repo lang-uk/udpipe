@@ -13,6 +13,8 @@
 #include "generic_lemma_addinfo.h"
 #include "morpho_dictionary.h"
 #include "morpho_statistical_guesser.h"
+#include "mi/guesser.h"
+
 
 namespace ufal {
 namespace udpipe {
@@ -36,6 +38,7 @@ class generic_morpho : public morpho {
   unsigned version;
   morpho_dictionary<generic_lemma_addinfo> dictionary;
   unique_ptr<morpho_statistical_guesser> statistical_guesser;
+  mutable mi::Guesser mi_guesser;
 
   string unknown_tag, number_tag, punctuation_tag, symbol_tag;
 };

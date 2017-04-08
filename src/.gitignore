@@ -4,3 +4,4 @@ libudpipe.*
 udpipe
 *.exe
 *.swp
+cmake-build-*

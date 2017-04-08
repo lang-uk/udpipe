@@ -7,6 +7,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+MI_OBJECTS = mi/guesser
+
 UDPIPE_MAKEFILE_INCLUDE_CWD:=$(dir $(lastword $(MAKEFILE_LIST)))
 include $(UDPIPE_MAKEFILE_INCLUDE_CWD)morphodita/Makefile.include
 include $(UDPIPE_MAKEFILE_INCLUDE_CWD)parsito/Makefile.include
@@ -17,6 +19,7 @@ UDPIPE_UNILIB_OBJECTS = $(filter unilib/%,$(MORPHODITA_OBJECTS) $(PARSITO_OBJECT
 UDPIPE_UTILS_OBJECTS = $(filter utils/%,$(MORPHODITA_OBJECTS) $(PARSITO_OBJECTS))
 
 UDPIPE_OBJECTS = $(UDPIPE_MORPHODITA_OBJECTS) $(UDPIPE_PARSITO_OBJECTS) $(UDPIPE_UNILIB_OBJECTS) $(UDPIPE_UTILS_OBJECTS)
+UDPIPE_OBJECTS += $(MI_OBJECTS)
 UDPIPE_OBJECTS += model/evaluator model/model model/model_morphodita_parsito model/pipeline
 UDPIPE_OBJECTS += morphodita/morpho/generic_morpho_encoder morphodita/morpho/morpho_statistical_guesser_encoder
 UDPIPE_OBJECTS += morphodita/morpho/morpho_statistical_guesser_trainer morphodita/morpho/raw_morpho_dictionary_reader
