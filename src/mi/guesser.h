@@ -23,25 +23,30 @@ using namespace ufal::udpipe::utils;
 
 typedef morpho_dictionary<generic_lemma_addinfo> Dictionary;
 
-
-namespace mi
+namespace institute
 {
-  class Guesser
+  namespace mova
   {
-  private:
-    const Dictionary *dictionary;
+    class Guesser
+    {
+    private:
+      const Dictionary* dictionary;
 
-    std::locale unicode_locale{"en_US.UTF-8"};
-    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-  public:
-    void setDictionary(const Dictionary *dictionary);
+      std::locale unicode_locale{"en_US.UTF-8"};
+      std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+    public:
+      void setDictionary(const Dictionary* dictionary);
 
-    void analyze(vector<tagged_lemma>& o_lemmas, const char *i_form_bytes);
+      void analyze(vector<tagged_lemma>& o_lemmas, const char* i_form_bytes);
 
-  private:
-    void lookup(const wstring& form, vector<tagged_lemma, allocator<tagged_lemma>>& o_lemmas);
-    void lookup_cases(vector<tagged_lemma>& o_lemmas, const wstring& form);
-  };
+    private:
+      void lookup(const wstring& form, vector<tagged_lemma, allocator<tagged_lemma>>& o_lemmas);
+
+      void lookup_cases(vector<tagged_lemma>& o_lemmas, const wstring& form);
+
+      void lookup_fricativized(vector<tagged_lemma, allocator<tagged_lemma>>& o_lemmas, const wstring& form);
+    };
+  }
 }
 
 

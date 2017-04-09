@@ -1,7 +1,7 @@
+cmake-build-*
 /.build/
 rest_server/udpipe_server
 libudpipe.*
 udpipe
 *.exe
 *.swp
-cmake-build-*

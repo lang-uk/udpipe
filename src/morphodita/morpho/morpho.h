@@ -31,6 +31,7 @@ struct tagged_lemma {
 
   tagged_lemma() {}
   tagged_lemma(const string& lemma, const string& tag) : lemma(lemma), tag(tag) {}
+  tagged_lemma(const char* lemma, const string& tag) : lemma(lemma), tag(tag) {}
 };
 
 struct tagged_lemma_forms {

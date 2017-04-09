@@ -38,7 +38,7 @@ class generic_morpho : public morpho {
   unsigned version;
   morpho_dictionary<generic_lemma_addinfo> dictionary;
   unique_ptr<morpho_statistical_guesser> statistical_guesser;
-  mutable mi::Guesser mi_guesser;
+  mutable institute::mova::Guesser mi_guesser;
 
   string unknown_tag, number_tag, punctuation_tag, symbol_tag;
 };
