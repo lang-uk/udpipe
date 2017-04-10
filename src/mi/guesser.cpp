@@ -3,167 +3,21 @@
 //
 
 #include "guesser.h"
+#include "static.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/locale/conversion.hpp>
-#include <regex>
+#include <boost/iterator/filter_iterator.hpp>
+#include <algorithm>
+#include <iostream>
 
 
 namespace institute
 {
   namespace mova
   {
-//  static const auto ORDINAL_PARADIGM_BASE = {
-//      "Case=Nom|Gender=Masc|NumType=Ord",
-//      "Case=Gen|Gender=Masc|NumType=Ord",
-//      "Case=Dat|Gender=Masc|NumType=Ord",
-//      "Case=Acc|Gender=Masc|NumType=Ord",
-//      "Case=Ins|Gender=Masc|NumType=Ord",
-//      "Case=Loc|Gender=Masc|NumType=Ord",
-//      "Case=Voc|Gender=Masc|NumType=Ord",
-//      "Case=Nom|Gender=Fem|NumType=Ord",
-//      "Case=Gen|Gender=Fem|NumType=Ord",
-//      "Case=Dat|Gender=Fem|NumType=Ord",
-//      "Case=Acc|Gender=Fem|NumType=Ord",
-//      "Case=Ins|Gender=Fem|NumType=Ord",
-//      "Case=Loc|Gender=Fem|NumType=Ord",
-//      "Case=Voc|Gender=Fem|NumType=Ord",
-//      "Case=Nom|Gender=Neut|NumType=Ord",
-//      "Case=Gen|Gender=Neut|NumType=Ord",
-//      "Case=Dat|Gender=Neut|NumType=Ord",
-//      "Case=Acc|Gender=Neut|NumType=Ord",
-//      "Case=Ins|Gender=Neut|NumType=Ord",
-//      "Case=Loc|Gender=Neut|NumType=Ord",
-//      "Case=Voc|Gender=Neut|NumType=Ord",
-//      "Case=Nom|Number=Plur|NumType=Ord",
-//      "Case=Gen|Number=Plur|NumType=Ord",
-//      "Case=Dat|Number=Plur|NumType=Ord",
-//      "Case=Acc|Number=Plur|NumType=Ord",
-//      "Case=Ins|Number=Plur|NumType=Ord",
-//      "Case=Loc|Number=Plur|NumType=Ord",
-//      "Case=Voc|Number=Plur|NumType=Ord",
-//  };
-
-    static const auto CARDINAL_1_2_PARADIGM = {
-        "Case=Nom|Gender=Masc|NumType=Card",
-        "Case=Gen|Gender=Masc|NumType=Card",
-        "Case=Dat|Gender=Masc|NumType=Card",
-        "Case=Acc|Gender=Masc|NumType=Card",
-        "Case=Ins|Gender=Masc|NumType=Card",
-        "Case=Loc|Gender=Masc|NumType=Card",
-        "Case=Voc|Gender=Masc|NumType=Card",
-        "Case=Nom|Gender=Fem|NumType=Card",
-        "Case=Gen|Gender=Fem|NumType=Card",
-        "Case=Dat|Gender=Fem|NumType=Card",
-        "Case=Acc|Gender=Fem|NumType=Card",
-        "Case=Ins|Gender=Fem|NumType=Card",
-        "Case=Loc|Gender=Fem|NumType=Card",
-        "Case=Voc|Gender=Fem|NumType=Card",
-        "Case=Nom|Gender=Neut|NumType=Card",
-        "Case=Gen|Gender=Neut|NumType=Card",
-        "Case=Dat|Gender=Neut|NumType=Card",
-        "Case=Acc|Gender=Neut|NumType=Card",
-        "Case=Ins|Gender=Neut|NumType=Card",
-        "Case=Loc|Gender=Neut|NumType=Card",
-        "Case=Voc|Gender=Neut|NumType=Card",
-    };
-
-    static const auto CARDINAL_GENERAL_PARADIGM = {
-        "~NUM~~Case=Nom|Number=Plur|NumType=Card",
-        "~NUM~~Case=Gen|Number=Plur|NumType=Card",
-        "~NUM~~Case=Dat|Number=Plur|NumType=Card",
-        "~NUM~~Case=Acc|Number=Plur|NumType=Card",
-        "~NUM~~Case=Ins|Number=Plur|NumType=Card",
-        "~NUM~~Case=Loc|Number=Plur|NumType=Card",
-        "~NUM~~Case=Voc|Number=Plur|NumType=Card",
-//    };
-//
-//    static const auto ORDINAL_PARADIGM = {
-        "~ADJ~~Case=Nom|Gender=Masc|NumType=Ord",
-        "~ADJ~~Case=Gen|Gender=Masc|NumType=Ord",
-        "~ADJ~~Case=Dat|Gender=Masc|NumType=Ord",
-        "~ADJ~~Case=Acc|Gender=Masc|NumType=Ord",
-        "~ADJ~~Case=Ins|Gender=Masc|NumType=Ord",
-        "~ADJ~~Case=Loc|Gender=Masc|NumType=Ord",
-        "~ADJ~~Case=Voc|Gender=Masc|NumType=Ord",
-        "~ADJ~~Case=Nom|Gender=Fem|NumType=Ord",
-        "~ADJ~~Case=Gen|Gender=Fem|NumType=Ord",
-        "~ADJ~~Case=Dat|Gender=Fem|NumType=Ord",
-        "~ADJ~~Case=Acc|Gender=Fem|NumType=Ord",
-        "~ADJ~~Case=Ins|Gender=Fem|NumType=Ord",
-        "~ADJ~~Case=Loc|Gender=Fem|NumType=Ord",
-        "~ADJ~~Case=Voc|Gender=Fem|NumType=Ord",
-        "~ADJ~~Case=Nom|Gender=Neut|NumType=Ord",
-        "~ADJ~~Case=Gen|Gender=Neut|NumType=Ord",
-        "~ADJ~~Case=Dat|Gender=Neut|NumType=Ord",
-        "~ADJ~~Case=Acc|Gender=Neut|NumType=Ord",
-        "~ADJ~~Case=Ins|Gender=Neut|NumType=Ord",
-        "~ADJ~~Case=Loc|Gender=Neut|NumType=Ord",
-        "~ADJ~~Case=Voc|Gender=Neut|NumType=Ord",
-        "~ADJ~~Case=Nom|Number=Plur|NumType=Ord",
-        "~ADJ~~Case=Gen|Number=Plur|NumType=Ord",
-        "~ADJ~~Case=Dat|Number=Plur|NumType=Ord",
-        "~ADJ~~Case=Acc|Number=Plur|NumType=Ord",
-        "~ADJ~~Case=Ins|Number=Plur|NumType=Ord",
-        "~ADJ~~Case=Loc|Number=Plur|NumType=Ord",
-        "~ADJ~~Case=Voc|Number=Plur|NumType=Ord",
-//    };
-//
-//    static const auto ORDINAL_ASNOUN_PARADIGM = {
-        "~NOUN~~Animacy=Inan|Case=Nom|Gender=Masc|NumType=Ord",
-        "~NOUN~~Animacy=Inan|Case=Gen|Gender=Masc|NumType=Ord",
-        "~NOUN~~Animacy=Inan|Case=Dat|Gender=Masc|NumType=Ord",
-        "~NOUN~~Animacy=Inan|Case=Acc|Gender=Masc|NumType=Ord",
-        "~NOUN~~Animacy=Inan|Case=Ins|Gender=Masc|NumType=Ord",
-        "~NOUN~~Animacy=Inan|Case=Loc|Gender=Masc|NumType=Ord",
-        "~NOUN~~Animacy=Inan|Case=Voc|Gender=Masc|NumType=Ord",
-        "~NOUN~~Animacy=Inan|Case=Nom|Gender=Fem|NumType=Ord",
-        "~NOUN~~Animacy=Inan|Case=Gen|Gender=Fem|NumType=Ord",
-        "~NOUN~~Animacy=Inan|Case=Dat|Gender=Fem|NumType=Ord",
-        "~NOUN~~Animacy=Inan|Case=Acc|Gender=Fem|NumType=Ord",
-        "~NOUN~~Animacy=Inan|Case=Ins|Gender=Fem|NumType=Ord",
-        "~NOUN~~Animacy=Inan|Case=Loc|Gender=Fem|NumType=Ord",
-        "~NOUN~~Animacy=Inan|Case=Voc|Gender=Fem|NumType=Ord",
-        "~NOUN~~Animacy=Inan|Case=Nom|Gender=Neut|NumType=Ord",
-        "~NOUN~~Animacy=Inan|Case=Gen|Gender=Neut|NumType=Ord",
-        "~NOUN~~Animacy=Inan|Case=Dat|Gender=Neut|NumType=Ord",
-        "~NOUN~~Animacy=Inan|Case=Acc|Gender=Neut|NumType=Ord",
-        "~NOUN~~Animacy=Inan|Case=Ins|Gender=Neut|NumType=Ord",
-        "~NOUN~~Animacy=Inan|Case=Loc|Gender=Neut|NumType=Ord",
-        "~NOUN~~Animacy=Inan|Case=Voc|Gender=Neut|NumType=Ord",
-        "~NOUN~~Animacy=Inan|Case=Nom|Number=Plur|NumType=Ord",
-        "~NOUN~~Animacy=Inan|Case=Gen|Number=Plur|NumType=Ord",
-        "~NOUN~~Animacy=Inan|Case=Dat|Number=Plur|NumType=Ord",
-        "~NOUN~~Animacy=Inan|Case=Acc|Number=Plur|NumType=Ord",
-        "~NOUN~~Animacy=Inan|Case=Ins|Number=Plur|NumType=Ord",
-        "~NOUN~~Animacy=Inan|Case=Loc|Number=Plur|NumType=Ord",
-        "~NOUN~~Animacy=Inan|Case=Voc|Number=Plur|NumType=Ord",
-        "~NOUN~~Animacy=Inan|Case=Nom|Number=Ptan",
-        "~NOUN~~Animacy=Inan|Case=Gen|Number=Ptan",
-        "~NOUN~~Animacy=Inan|Case=Dat|Number=Ptan",
-        "~NOUN~~Animacy=Inan|Case=Acc|Number=Ptan",
-        "~NOUN~~Animacy=Inan|Case=Ins|Number=Ptan",
-        "~NOUN~~Animacy=Inan|Case=Loc|Number=Ptan",
-        "~NOUN~~Animacy=Inan|Case=Voc|Number=Ptan",
-    };
-//  static const std::vector<std::string> ORDINAL_PARADIGM_VECTOR(ORDINAL_PARADIGM);
-    static std::vector<const char*> vec;
-
-
-    static const auto SYM_TAG = "~SYM~";
-
-    static const std::wregex SMILE_RE(LR"(:\(+|:\)+)");
-    static const std::wregex ARABIC_1_2_NUMERAL_RE(LR"((\d+?[^1])?[12])");
-    static const std::wregex ARABIC_GENERAL_NUMERAL_RE(LR"(\d+?1\d|\d+?[03-9])");
-    static const std::wregex ARABIC_NUMERAL_RE(LR"(\d+)");
-    // see "B. Parsing a URI Reference with a Regular Expression" http://www.ietf.org/rfc/rfc2396.txt
-//  static const std::wregex URL_RE(LR"(^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?)");
-    static const std::wregex URL_LOSE_RE(LR"(https?://.*|www\..*)");
-
+    ///////////////////////////////////////////////////////////////////////////
     void Guesser::analyze(vector<tagged_lemma>& o_lemmas, const char* i_form_bytes)
     {
-
-//    std::vector<std::string> v;
-//    v.insert(v.end(), {{""}});
       auto init_num_lemmas = o_lemmas.size();
       auto form = converter.from_bytes(i_form_bytes);
 
@@ -199,8 +53,32 @@ namespace institute
       if (init_num_lemmas == o_lemmas.size()) {
         lookup_fricativized(o_lemmas, form);
       }
+
+      if (init_num_lemmas == o_lemmas.size() && std::regex_match(form, FOREIGN_RE)) {
+        o_lemmas.emplace_back(i_form_bytes, FOREIGN_TAG);
+      }
+
+      if (init_num_lemmas == o_lemmas.size()) {
+        std::wsmatch m;
+        if (std::regex_match(form, m, ABBR_NUMERAL_RE)) {
+          wchar_t last_digit_char = *(m[1].second - 1);
+          wstring ending(m[2].first, m[2].second);
+
+          std::for_each(std::begin(NUMERAL_MAP), std::end(NUMERAL_MAP), [&](const NumMapRow& row) {
+            if (row.digit == last_digit_char && boost::ends_with(row.form, ending)) {
+              wstring lemma(m[1].first, m[1].second);
+              lemma += L'-';
+              lemma.insert(lemma.end(), row.lemma.end() - ending.length(), row.lemma.end());  // todo: safe
+//              wcerr << lemma << endl;
+
+              o_lemmas.emplace_back(converter.to_bytes(lemma), row.tag);
+            }
+          });
+        }
+      }
     }
 
+    ///////////////////////////////////////////////////////////////////////////
     void Guesser::lookup_cases(vector<tagged_lemma>& o_lemmas, const wstring& form)
     {
       auto lowercase = boost::to_lower_copy(form, unicode_locale);
@@ -220,6 +98,7 @@ namespace institute
       }
     }
 
+    ///////////////////////////////////////////////////////////////////////////
     void Guesser::lookup_fricativized(vector<tagged_lemma>& o_lemmas, const wstring& form)
     {
       wstring fricative;
@@ -254,15 +133,23 @@ namespace institute
       }
     }
 
+    ///////////////////////////////////////////////////////////////////////////
     void Guesser::lookup(const wstring& form, vector<tagged_lemma>& o_lemmas)
     {
       string bytes{converter.to_bytes(form)};
       dictionary->analyze(bytes, o_lemmas);
     }
 
-    void Guesser::setDictionary(const Dictionary* dictionary)
+    ///////////////////////////////////////////////////////////////////////////
+    void Guesser::init_with_dict(const Dictionary* dictionary)
     {
       this->dictionary = dictionary;
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    void Guesser::build_numeral_map()
+    {
+
     }
   }
 }

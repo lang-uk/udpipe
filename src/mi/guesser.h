@@ -35,7 +35,7 @@ namespace institute
       std::locale unicode_locale{"en_US.UTF-8"};
       std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
     public:
-      void setDictionary(const Dictionary* dictionary);
+      void init_with_dict(const Dictionary* dictionary);
 
       void analyze(vector<tagged_lemma>& o_lemmas, const char* i_form_bytes);
 
@@ -45,6 +45,8 @@ namespace institute
       void lookup_cases(vector<tagged_lemma>& o_lemmas, const wstring& form);
 
       void lookup_fricativized(vector<tagged_lemma, allocator<tagged_lemma>>& o_lemmas, const wstring& form);
+
+      void build_numeral_map();
     };
   }
 }

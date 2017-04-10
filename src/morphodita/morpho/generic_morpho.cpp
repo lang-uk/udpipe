@@ -43,7 +43,7 @@ bool generic_morpho::load(istream& is) {
 
     // Load dictionary
     dictionary.load(data);
-    mi_guesser.setDictionary(&dictionary);
+    mi_guesser.init_with_dict(&dictionary);
 
     // Optionally statistical guesser if present
     statistical_guesser.reset();
