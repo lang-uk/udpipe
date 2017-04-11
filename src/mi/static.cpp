@@ -5,6 +5,7 @@
 #include <string>
 #include <map>
 #include "static.h"
+#include <boost/algorithm/string/join.hpp>
 
 using std::wstring;
 
@@ -12,9 +13,7 @@ namespace institute
 {
   namespace mova
   {
-    int foo() {
-      return 4;
-    }
-    int a = foo();
-}
+//    const wregex INTJ_RE{boost::join(INTJ_RE_STRS, L"|")};
+
+  }
 }

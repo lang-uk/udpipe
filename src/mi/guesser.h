@@ -13,6 +13,8 @@
 #include <locale>
 #include <iostream>
 #include <boost/locale/generator.hpp>
+#include <regex>
+#include <functional>
 
 
 using ufal::udpipe::morphodita::generic_lemma_addinfo;
@@ -21,12 +23,23 @@ using ufal::udpipe::morphodita::tagged_lemma;
 using namespace ufal::udpipe::utils;
 
 
+
 typedef morpho_dictionary<generic_lemma_addinfo> Dictionary;
 
 namespace institute
 {
   namespace mova
   {
+    struct TaggedLemma
+    {
+      string tag;
+
+      TaggedLemma(const string& tag, const wstring& lemma) : tag(tag), lemma(lemma)
+      {}
+
+      wstring lemma;
+    };
+
     class Guesser
     {
     private:
@@ -40,13 +53,18 @@ namespace institute
       void analyze(vector<tagged_lemma>& o_lemmas, const char* i_form_bytes);
 
     private:
-      void lookup(const wstring& form, vector<tagged_lemma, allocator<tagged_lemma>>& o_lemmas);
+      void lookup(vector<tagged_lemma>& o_lemmas, const wstring& i_form);
+
+      void lookup_w(vector<TaggedLemma>& o_lemmas,
+                    const wstring& form);
 
       void lookup_cases(vector<tagged_lemma>& o_lemmas, const wstring& form);
 
-      void lookup_fricativized(vector<tagged_lemma, allocator<tagged_lemma>>& o_lemmas, const wstring& form);
+      void lookup_fricativized(vector<tagged_lemma>& o_lemmas, const wstring& form);
 
-      void build_numeral_map();
+
+    private:
+
     };
   }
 }

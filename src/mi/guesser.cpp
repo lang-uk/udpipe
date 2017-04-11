@@ -18,12 +18,12 @@ namespace institute
     ///////////////////////////////////////////////////////////////////////////
     void Guesser::analyze(vector<tagged_lemma>& o_lemmas, const char* i_form_bytes)
     {
-      auto init_num_lemmas = o_lemmas.size();
+      auto init_num_interps = o_lemmas.size();
       auto form = converter.from_bytes(i_form_bytes);
 
       lookup_cases(o_lemmas, form);
 
-      if (init_num_lemmas == o_lemmas.size()) {
+      if (init_num_interps == o_lemmas.size()) {
         boost::replace_all(form, L"\'", L"’");
         boost::replace_all(form, L"\"", L"’");
         boost::replace_all(form, L"*", L"’");
@@ -32,17 +32,26 @@ namespace institute
       }
 
       if (std::regex_match(form, ARABIC_NUMERAL_RE)) {
-        for (auto tag : CARDINAL_GENERAL_PARADIGM) {
+        for (auto& tag : DIGITAL_COMMON_PARADIGM) {
           o_lemmas.emplace_back(i_form_bytes, tag);
         }
+
         if (std::regex_match(form, ARABIC_1_2_NUMERAL_RE)) {
-          for (auto tag : CARDINAL_1_2_PARADIGM) {
+          for (auto& tag : DIGITAL_1_2_PARADIGM) {
+            o_lemmas.emplace_back(i_form_bytes, tag);
+          }
+        } else {
+          for (auto& tag : DIGITAL_GENERAL_PARADIGM) {
             o_lemmas.emplace_back(i_form_bytes, tag);
           }
         }
+      } else if (std::regex_match(form, FRACTION_NUMERAL_RE)) {
+        for (auto& tag : DIGITAL_GENERAL_PARADIGM) {
+          o_lemmas.emplace_back(i_form_bytes, tag);
+        }
       }
 
-      if (init_num_lemmas == o_lemmas.size()) {
+      if (init_num_interps == o_lemmas.size()) {
         bool is_symbol = std::regex_match(form, SMILE_RE)
                          || std::regex_match(form, URL_LOSE_RE);
         if (is_symbol) {
@@ -50,16 +59,16 @@ namespace institute
         }
       }
 
-      if (init_num_lemmas == o_lemmas.size()) {
+      if (init_num_interps == o_lemmas.size()) {
         lookup_fricativized(o_lemmas, form);
       }
 
-      if (init_num_lemmas == o_lemmas.size() && std::regex_match(form, FOREIGN_RE)) {
+      if (init_num_interps == o_lemmas.size() && std::regex_match(form, FOREIGN_RE)) {
         o_lemmas.emplace_back(i_form_bytes, FOREIGN_TAG);
       }
 
-      if (init_num_lemmas == o_lemmas.size()) {
-        std::wsmatch m;
+      std::wsmatch m;
+      if (init_num_interps == o_lemmas.size()) {
         if (std::regex_match(form, m, ABBR_NUMERAL_RE)) {
           wchar_t last_digit_char = *(m[1].second - 1);
           wstring ending(m[2].first, m[2].second);
@@ -69,13 +78,66 @@ namespace institute
               wstring lemma(m[1].first, m[1].second);
               lemma += L'-';
               lemma.insert(lemma.end(), row.lemma.end() - ending.length(), row.lemma.end());  // todo: safe
-//              wcerr << lemma << endl;
-
               o_lemmas.emplace_back(converter.to_bytes(lemma), row.tag);
             }
           });
         }
       }
+
+      auto lowercase = boost::to_lower_copy(form, unicode_locale);
+      vector<tagged_lemma> temp;
+      vector<TaggedLemma> temp_w;
+
+      // INTJ regex
+      if (init_num_interps == o_lemmas.size()) {
+        if (std::regex_match(lowercase, INTJ_RE)) {
+          o_lemmas.emplace_back(converter.to_bytes(lowercase), INTJ_TAG);
+        }
+      }
+
+      // по-українському/по-українськи from regex
+      static const wregex PO_SKY(L"по-.*[цзс]ьки");
+      static const wregex PO_SKOMU(L"по-.*(ськ|н)ому");
+      if (std::regex_match(lowercase, PO_SKY) || std::regex_match(lowercase, PO_SKOMU)) {
+        o_lemmas.emplace_back(converter.to_bytes(lowercase), ADV_TAG);
+      }
+
+      // ховаючися from ховаючись
+      if (init_num_interps == o_lemmas.size() && boost::ends_with(lowercase, L"ся")) {
+        lowercase.back() = L'ь';
+        temp.clear();
+        lookup(temp, lowercase);
+        for (auto& interp : temp) {
+          if (boost::contains(interp.tag, "VerbForm=Conv")) {
+            o_lemmas.push_back(interp);
+          }
+        }
+        lowercase.back() = L'я';
+      }
+
+      // prefix match — schema 1
+      if (init_num_interps == o_lemmas.size()) {
+        for (auto& spec : PREFIX_SPECS) {
+          if (std::regex_search(lowercase, m, spec.re)) {
+            wstring no_prefix(lowercase.begin() + m[0].length(), lowercase.end());
+            temp_w.clear();
+            lookup_w(temp_w, no_prefix);
+            for (size_t i = 0; i < temp_w.size(); ++i) {
+              if (spec.test_and_postproc(temp_w[i].tag)) {
+                temp_w[i].lemma.insert(temp_w[i].lemma.begin(), m[0].first, m[0].second);
+                o_lemmas.emplace_back(converter.to_bytes(temp_w[i].lemma), temp_w[i].tag);
+              }
+            }
+          }
+        }
+      }
+
+#ifndef NDEBUG
+      if (init_num_interps == o_lemmas.size()) {
+        cerr << "Failed to analyze \"" << converter.to_bytes(form) << "\"" << endl;
+      }
+#endif
+
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -88,13 +150,22 @@ namespace institute
       boost::to_upper(titlecase, unicode_locale);
       titlecase += lowercase.substr(1);
 
-      lookup(form, o_lemmas);
+      auto init_num_interps = o_lemmas.size();
+      lookup(o_lemmas, form);
 
       if (form == titlecase || form == uppercase) {
-        lookup(lowercase, o_lemmas);
+        lookup(o_lemmas, lowercase);
       }
       if (form == uppercase && form.length() > 1) {
-        lookup(titlecase, o_lemmas);
+        lookup(o_lemmas, titlecase);
+      }
+
+      if (init_num_interps == o_lemmas.size() && form.length() > 1) {
+        lookup(o_lemmas, uppercase);
+      }
+
+      if (init_num_interps == o_lemmas.size() && form.length() > 1) {
+        lookup(o_lemmas, titlecase);
       }
     }
 
@@ -134,22 +205,27 @@ namespace institute
     }
 
     ///////////////////////////////////////////////////////////////////////////
-    void Guesser::lookup(const wstring& form, vector<tagged_lemma>& o_lemmas)
+    void Guesser::lookup(vector<tagged_lemma>& o_lemmas, const wstring& i_form)
     {
-      string bytes{converter.to_bytes(form)};
+      string bytes{converter.to_bytes(i_form)};
       dictionary->analyze(bytes, o_lemmas);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    void Guesser::lookup_w(vector<TaggedLemma>& o_interps, const wstring& i_form)
+    {
+      string bytes{converter.to_bytes(i_form)};
+      vector<tagged_lemma> temp;
+      dictionary->analyze(bytes, temp);
+      for (auto& interp : temp) {
+        o_interps.emplace_back(interp.tag, converter.from_bytes(interp.lemma));
+      }
     }
 
     ///////////////////////////////////////////////////////////////////////////
     void Guesser::init_with_dict(const Dictionary* dictionary)
     {
       this->dictionary = dictionary;
-    }
-
-    ///////////////////////////////////////////////////////////////////////////
-    void Guesser::build_numeral_map()
-    {
-
     }
   }
 }

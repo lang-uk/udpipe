@@ -273,7 +273,7 @@ set(SOURCE_FILES
         version/version.cpp
         version/version.h
         common.h
-        udpipe.cpp mi/guesser.cpp mi/guesser.h mi/guesser.cpp mi/guesser.h mi/static.cpp mi/static.h mi/nodejs.cpp mi/nodejs.h)
+        udpipe.cpp mi/guesser.cpp mi/guesser.h mi/guesser.cpp mi/guesser.h mi/static.cpp mi/static.h mi/nodejs.cpp mi/nodejs.h mi/MorphTag.cpp mi/MorphTag.h)
 
 add_executable(src ${SOURCE_FILES})
 include_directories(.)
