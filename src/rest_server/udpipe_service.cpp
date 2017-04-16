@@ -167,6 +167,9 @@ bool udpipe_service::handle_rest_process(microrestd::rest_request& req) {
     const string& parser;
     unique_ptr<output_format> output;
   };
+//  if (req.params.find("json") == "no") {
+////    req.respond("text/plain; charset=utf-8");
+//  }
   return req.respond(generator::mime, new generator(model, input.release(), tagger, parser, output.release()));
 }
 

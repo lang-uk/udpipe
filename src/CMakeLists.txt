@@ -1,10 +1,55 @@
 cmake_minimum_required(VERSION 3.7)
-project(src)
+project(udpipe)
 
 set(CMAKE_CXX_STANDARD 14)
 
 
-
+set(SERVER_FILES
+        rest_server/microrestd/libmicrohttpd/autoinit_funcs.h
+        rest_server/microrestd/libmicrohttpd/connection.cpp
+        rest_server/microrestd/libmicrohttpd/connection.h
+        rest_server/microrestd/libmicrohttpd/daemon.cpp
+        rest_server/microrestd/libmicrohttpd/internal.cpp
+        rest_server/microrestd/libmicrohttpd/internal.h
+        rest_server/microrestd/libmicrohttpd/memorypool.cpp
+        rest_server/microrestd/libmicrohttpd/memorypool.h
+        rest_server/microrestd/libmicrohttpd/MHD_config.h
+        rest_server/microrestd/libmicrohttpd/microhttpd.h
+        rest_server/microrestd/libmicrohttpd/platform.h
+        rest_server/microrestd/libmicrohttpd/platform_interface.h
+        rest_server/microrestd/libmicrohttpd/postprocessor.cpp
+        rest_server/microrestd/libmicrohttpd/reason_phrase.cpp
+        rest_server/microrestd/libmicrohttpd/reason_phrase.h
+        rest_server/microrestd/libmicrohttpd/response.cpp
+        rest_server/microrestd/libmicrohttpd/response.h
+        rest_server/microrestd/libmicrohttpd/tsearch.h
+        rest_server/microrestd/libmicrohttpd/w32functions.cpp
+        rest_server/microrestd/libmicrohttpd/w32functions.h
+        rest_server/microrestd/pugixml/pugiconfig.h
+        rest_server/microrestd/pugixml/pugixml.cpp
+        rest_server/microrestd/pugixml/pugixml.h
+        rest_server/microrestd/rest_server/json_builder.cpp
+        rest_server/microrestd/rest_server/json_builder.h
+        rest_server/microrestd/rest_server/json_response_generator.cpp
+        rest_server/microrestd/rest_server/json_response_generator.h
+        rest_server/microrestd/rest_server/response_generator.h
+        rest_server/microrestd/rest_server/rest_request.h
+        rest_server/microrestd/rest_server/rest_server.cpp
+        rest_server/microrestd/rest_server/rest_server.h
+        rest_server/microrestd/rest_server/rest_service.h
+        rest_server/microrestd/rest_server/string_piece.h
+        rest_server/microrestd/rest_server/version.cpp
+        rest_server/microrestd/rest_server/version.h
+        rest_server/microrestd/rest_server/xml_builder.cpp
+        rest_server/microrestd/rest_server/xml_builder.h
+        rest_server/microrestd/rest_server/xml_response_generator.cpp
+        rest_server/microrestd/rest_server/xml_response_generator.h
+        rest_server/microrestd/microrestd.h
+        rest_server/microrestd/pugixml.h
+        rest_server/udpipe_server.cpp
+        rest_server/udpipe_service.cpp
+        rest_server/udpipe_service.h
+        )
 set(SOURCE_FILES
         model/evaluator.cpp
         model/evaluator.h
@@ -166,50 +211,6 @@ set(SOURCE_FILES
         parsito/tree/tree_format_conllu.h
         parsito/version/version.cpp
         parsito/version/version.h
-#        rest_server/microrestd/libmicrohttpd/autoinit_funcs.h
-#        rest_server/microrestd/libmicrohttpd/connection.cpp
-#        rest_server/microrestd/libmicrohttpd/connection.h
-#        rest_server/microrestd/libmicrohttpd/daemon.cpp
-#        rest_server/microrestd/libmicrohttpd/internal.cpp
-#        rest_server/microrestd/libmicrohttpd/internal.h
-#        rest_server/microrestd/libmicrohttpd/memorypool.cpp
-#        rest_server/microrestd/libmicrohttpd/memorypool.h
-#        rest_server/microrestd/libmicrohttpd/MHD_config.h
-#        rest_server/microrestd/libmicrohttpd/microhttpd.h
-#        rest_server/microrestd/libmicrohttpd/platform.h
-#        rest_server/microrestd/libmicrohttpd/platform_interface.h
-#        rest_server/microrestd/libmicrohttpd/postprocessor.cpp
-#        rest_server/microrestd/libmicrohttpd/reason_phrase.cpp
-#        rest_server/microrestd/libmicrohttpd/reason_phrase.h
-#        rest_server/microrestd/libmicrohttpd/response.cpp
-#        rest_server/microrestd/libmicrohttpd/response.h
-#        rest_server/microrestd/libmicrohttpd/tsearch.h
-#        rest_server/microrestd/libmicrohttpd/w32functions.cpp
-#        rest_server/microrestd/libmicrohttpd/w32functions.h
-#        rest_server/microrestd/pugixml/pugiconfig.h
-#        rest_server/microrestd/pugixml/pugixml.cpp
-#        rest_server/microrestd/pugixml/pugixml.h
-#        rest_server/microrestd/rest_server/json_builder.cpp
-#        rest_server/microrestd/rest_server/json_builder.h
-#        rest_server/microrestd/rest_server/json_response_generator.cpp
-#        rest_server/microrestd/rest_server/json_response_generator.h
-#        rest_server/microrestd/rest_server/response_generator.h
-#        rest_server/microrestd/rest_server/rest_request.h
-#        rest_server/microrestd/rest_server/rest_server.cpp
-#        rest_server/microrestd/rest_server/rest_server.h
-#        rest_server/microrestd/rest_server/rest_service.h
-#        rest_server/microrestd/rest_server/string_piece.h
-#        rest_server/microrestd/rest_server/version.cpp
-#        rest_server/microrestd/rest_server/version.h
-#        rest_server/microrestd/rest_server/xml_builder.cpp
-#        rest_server/microrestd/rest_server/xml_builder.h
-#        rest_server/microrestd/rest_server/xml_response_generator.cpp
-#        rest_server/microrestd/rest_server/xml_response_generator.h
-#        rest_server/microrestd/microrestd.h
-#        rest_server/microrestd/pugixml.h
-#        rest_server/udpipe_server.cpp
-#        rest_server/udpipe_service.cpp
-#        rest_server/udpipe_service.h
         sentence/empty_node.h
         sentence/input_format.cpp
         sentence/input_format.h
@@ -273,13 +274,26 @@ set(SOURCE_FILES
         version/version.cpp
         version/version.h
         common.h
-        udpipe.cpp mi/guesser.cpp mi/guesser.h mi/guesser.cpp mi/guesser.h mi/static.cpp mi/static.h mi/nodejs.cpp mi/nodejs.h mi/MorphTag.cpp mi/MorphTag.h)
+        mi/guesser.cpp
+        mi/guesser.h
+        mi/guesser.cpp
+        mi/guesser.h
+        mi/static.cpp
+        mi/static.h
+        mi/nodejs.cpp
+        mi/nodejs.h
+        mi/MorphTag.cpp
+        mi/MorphTag.h
+        )
 
-add_executable(src ${SOURCE_FILES})
+add_executable(udpipe ${SOURCE_FILES} udpipe.cpp)
+add_executable(udpipe_server ${SOURCE_FILES} ${SERVER_FILES})
+
 include_directories(.)
 
 find_package(Boost 1.63 COMPONENTS locale)
-if(Boost_FOUND)
+if (Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
-    target_link_libraries(src ${Boost_LIBRARIES})
-endif()
+    target_link_libraries(udpipe ${Boost_LIBRARIES})
+    target_link_libraries(udpipe_server ${Boost_LIBRARIES})
+endif ()
