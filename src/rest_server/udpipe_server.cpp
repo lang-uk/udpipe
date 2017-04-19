@@ -64,6 +64,7 @@ int main(int argc, char* argv[])
                        {"version", options::value::none},
                        {"nolog",     options::value::none},
                        {"log",     options::value::any},
+                       {"max-request-bytes",     options::value::any},
                        {"help",    options::value::none}}, argc, argv, options) ||
       options.count("help") ||
       ((argc < 2 || (argc % 3) != 2) && !options.count("version")))
@@ -104,6 +105,16 @@ int main(int argc, char* argv[])
     server.set_log_file(&log_file);
   }
 
+  // set max request size
+  auto max_request_body_size = 1u << 20;
+  if (options.count("max-request-bytes")) {
+    max_request_body_size = static_cast<unsigned>(std::stoul(options["max-request-bytes"]));
+    if (!max_request_body_size) {
+      max_request_body_size = std::numeric_limits<unsigned>::max() - 1;
+    }
+    cerr << "Max request body size is " << max_request_body_size << " bytes." << endl;
+  }
+
   // Daemonize if requested
 #ifdef __linux__
   if (options.count("daemon")) {
@@ -119,7 +130,7 @@ int main(int argc, char* argv[])
 
   // Start the server
   server.set_max_connections(256);
-  server.set_max_request_body_size(1 << 20);
+  server.set_max_request_body_size(max_request_body_size);
   server.set_min_generated(32 * (1 << 10));
   server.set_threads(0);
   server.set_timeout(60);
