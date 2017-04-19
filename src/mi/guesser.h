@@ -12,9 +12,7 @@
 #include <string>
 #include <locale>
 #include <iostream>
-#include <boost/locale/generator.hpp>
 #include <regex>
-#include <functional>
 
 
 using ufal::udpipe::morphodita::generic_lemma_addinfo;

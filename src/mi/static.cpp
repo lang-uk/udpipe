@@ -5,7 +5,6 @@
 #include <string>
 #include <map>
 #include "static.h"
-#include <boost/algorithm/string/join.hpp>
 
 using std::wstring;
 
