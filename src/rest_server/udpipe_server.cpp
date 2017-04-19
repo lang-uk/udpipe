@@ -55,19 +55,22 @@ class syslog_streambuf : public streambuf {
 microrestd::rest_server server;
 udpipe_service service;
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
   iostreams_init();
 
   options::map options;
-  if (!options::parse({{"daemon",options::value::none},
+  if (!options::parse({{"daemon",  options::value::none},
                        {"version", options::value::none},
-                       {"help", options::value::none}}, argc, argv, options) ||
+                       {"nolog",     options::value::none},
+                       {"log",     options::value::any},
+                       {"help",    options::value::none}}, argc, argv, options) ||
       options.count("help") ||
       ((argc < 2 || (argc % 3) != 2) && !options.count("version")))
     runtime_failure("Usage: " << argv[0] << " [options] port (model_name model_file acknowledgements)*\n"
-                    "Options: --daemon\n"
-                    "         --version\n"
-                    "         --help");
+        "Options: --daemon\n"
+        "         --version\n"
+        "         --help");
   if (options.count("version")) {
     ostringstream other_libraries;
     auto microrestd = microrestd::version::current();
@@ -91,9 +94,15 @@ int main(int argc, char* argv[]) {
     runtime_failure("Cannot load specified models!");
 
   // Open log file
-  string log_file_name = string(argv[0]) + ".log";
-  ofstream log_file(log_file_name.c_str(), ofstream::app);
-  if (!log_file) runtime_failure("Cannot open log file '" << log_file_name << "' for writing!");
+  ofstream log_file;
+  if (!options.count("nolog")) {
+    string log_file_name = options.count("log")
+                           ? options["log"]
+                           : string(argv[0]) + ".log";
+    log_file = ofstream(log_file_name.c_str(), ofstream::app);
+    if (!log_file) runtime_failure("Cannot open log file '" << log_file_name << "' for writing!");
+    server.set_log_file(&log_file);
+  }
 
   // Daemonize if requested
 #ifdef __linux__
@@ -109,10 +118,9 @@ int main(int argc, char* argv[]) {
 #endif
 
   // Start the server
-  server.set_log_file(&log_file);
   server.set_max_connections(256);
-  server.set_max_request_body_size(1<<20);
-  server.set_min_generated(32 * (1<<10));
+  server.set_max_request_body_size(1 << 20);
+  server.set_min_generated(32 * (1 << 10));
   server.set_threads(0);
   server.set_timeout(60);
 

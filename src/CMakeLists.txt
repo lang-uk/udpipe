@@ -297,3 +297,5 @@ if (Boost_FOUND)
     target_link_libraries(udpipe ${Boost_LIBRARIES})
     target_link_libraries(udpipe_server ${Boost_LIBRARIES})
 endif ()
+
+#set_property(TARGET udpipe_server PROPERTY INTERPROCEDURAL_OPTIMIZATION 1)

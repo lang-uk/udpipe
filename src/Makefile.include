@@ -7,7 +7,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-MI_OBJECTS = mi/guesser
+MI_OBJECTS = mi/guesser mi/static
 
 UDPIPE_MAKEFILE_INCLUDE_CWD:=$(dir $(lastword $(MAKEFILE_LIST)))
 include $(UDPIPE_MAKEFILE_INCLUDE_CWD)morphodita/Makefile.include

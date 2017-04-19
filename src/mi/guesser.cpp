@@ -19,7 +19,7 @@ namespace institute::mova
     auto init_num_interps = o_lemmas.size();
     auto form = converter.from_bytes(i_form_bytes);
 
-    boost::erase_all(form, L"\u0301");  // kill COMBINING ACUTE ACCENT
+//    boost::erase_all(form, L"\u0301");  // kill COMBINING ACUTE ACCENT
 
     lookup_cases(o_lemmas, form);
 
@@ -30,6 +30,7 @@ namespace institute::mova
       boost::replace_all(form, L"`", L"’");
       lookup_cases(o_lemmas, form);
     }
+
 
     if (std::regex_match(form, ARABIC_NUMERAL_RE)) {
       for (auto& tag : DIGITAL_COMMON_PARADIGM) {
