@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.5)
+
 project(udpipe)
 
 set(CMAKE_CXX_STANDARD 14)
@@ -288,7 +289,7 @@ set(COMMON_FILES
         #        version/version.h
         ##        common.h
         mi/guesser.cpp
-#        mi/guesser.h
+        #        mi/guesser.h
         mi/static.cpp
         #        mi/static.h
         #        mi/nodejs.cpp
@@ -302,11 +303,13 @@ include_directories(.)
 
 
 set(CMAKE_CXX_EXTENSIONS OFF)
+find_package(Threads)
 
 add_executable(udpipe ${COMMON_FILES} ${UDPIPE_CLI_FILES} udpipe.cpp)
 add_executable(udpipe_server ${COMMON_FILES} ${MICRORESTD_FILES} ${UDPIPE_SERVER_FILES})
+target_link_libraries(udpipe_server ${CMAKE_THREAD_LIBS_INIT})
 
-find_package(Boost 1.63)
+find_package(Boost)
 if (Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
 endif ()
