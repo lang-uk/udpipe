@@ -251,10 +251,10 @@ bool udpipe_service::handle_rest_process(microrestd::rest_request& req) {
   };
 
   if (req.params["json"] == "false") {
-    return req.respond("text/plain; charset=utf-8", new PlaintextGenerator(model, input.release(), tagger, parser, output.release()));
+    return req.respond("text/plain; charset=utf-8", new PlaintextGenerator(loaded.release(), input.release(), tagger, parser, output.release()));
   }
   else {
-    return req.respond("application/json; charset=utf-8", new generator(model, input.release(), tagger, parser, output.release()));
+    return req.respond("application/json; charset=utf-8", new generator(loaded.release(), input.release(), tagger, parser, output.release()));
   }
 }
 

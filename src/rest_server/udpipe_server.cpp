@@ -57,8 +57,7 @@ microrestd::rest_server server;
 udpipe_service service;
 udpipe_service::service_options service_options;
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
   iostreams_init();
 
   options::map options;
