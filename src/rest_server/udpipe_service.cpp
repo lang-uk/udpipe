@@ -108,6 +108,15 @@ bool udpipe_service::handle_rest_models(microrestd::rest_request& req) {
 }
 
 bool udpipe_service::handle_rest_process(microrestd::rest_request& req) {
+  auto end = req.params.end();
+  auto set_fullstack = !req.params.count("tokenizer")
+                       && !req.params.count("tagger")
+                       && !req.params.count("parser");
+
+  if (set_fullstack) {
+    req.params["tokenizer"] = req.params["tagger"] = req.params["parser"] = "";
+  }
+
   string error;
   auto rest_id = get_rest_model_id(req);
   auto model = load_rest_model(rest_id, error);
@@ -130,6 +139,58 @@ bool udpipe_service::handle_rest_process(microrestd::rest_request& req) {
   }
 
   input->set_text(data);
+
+  class PlaintextGenerator: public rest_response_generator {
+  public:
+    PlaintextGenerator(const model_info* model, input_format* input, const string& tagger, const string& parser, output_format* output)
+        : rest_response_generator(model), input(input), tagger(tagger), parser(parser), output(output) {}
+
+
+    virtual microrestd::string_piece current() const {
+      return microrestd::string_piece(buf.c_str(), buf.size());
+    }
+
+    virtual void consume(size_t length) {
+      if (!length) {
+        return;
+      }
+      if (length < buf.size())
+        buf.erase(buf.begin(), buf.begin() + length);
+      else
+        buf.clear();
+    }
+
+    virtual bool generate() {
+      if (!input->next_sentence(s, error)) {
+        output->finish_document(os);
+        buf += os.str();
+        os.str("");
+        return false;
+      }
+
+      if (tagger != "none")
+        model->model->tag(s, tagger, error);
+      if (parser != "none")
+        model->model->parse(s, parser, error);
+
+      output->write_sentence(s, os);
+      buf += os.str();
+      os.str("");
+
+      return true;
+    }
+
+  private:
+    string buf;
+    sentence s;
+    string error;
+    ostringstream os;
+    unique_ptr<input_format> input;
+    const string& tagger;
+    const string& parser;
+    unique_ptr<output_format> output;
+  };
+
   class generator : public rest_response_generator {
    public:
     generator(const model_info* model, input_format* input, const string& tagger, const string& parser, output_format* output)
@@ -167,11 +228,13 @@ bool udpipe_service::handle_rest_process(microrestd::rest_request& req) {
     const string& parser;
     unique_ptr<output_format> output;
   };
-  // todo
-//  if (req.params.find("json") == "no") {
-////    req.respond("text/plain; charset=utf-8");
-//  }
-  return req.respond(generator::mime, new generator(model, input.release(), tagger, parser, output.release()));
+
+  if (req.params["json"] == "false") {
+    return req.respond("text/plain; charset=utf-8", new PlaintextGenerator(model, input.release(), tagger, parser, output.release()));
+  }
+  else {
+    return req.respond("application/json; charset=utf-8", new generator(model, input.release(), tagger, parser, output.release()));
+  }
 }
 
 // REST service helpers
