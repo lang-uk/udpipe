@@ -1,3 +1,20 @@
+Version 3.2.1 [08 Apr 2017]
+---------------------------
+- Add threadsafe_resource_loader destructor freeing currently
+  unused resources.
+
+
+Version 3.2.0 [08 Apr 2017]
+---------------------------
+- Add threadsafe_resource_loader.h header
+
+
+Version 3.1.1 [31 Mar 2017]
+---------------------------
+- Support leading + in parse_int and parse_double
+- Support exponent in parse_double
+
+
 Version 3.1.0 [29 Mar 2017]
 ---------------------------
 - Allow specifying binary mode in process_args_with_output_template.

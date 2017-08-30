@@ -7,6 +7,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+#include <fstream>
 #include <sstream>
 
 #include "udpipe_service.h"
@@ -15,19 +16,33 @@ namespace ufal {
 namespace udpipe {
 
 // Init the UDPipe service -- load the models
-bool udpipe_service::init(const vector<model_description>& model_descriptions) {
-  if (model_descriptions.empty()) return false;
+bool udpipe_service::init(const service_options& options) {
+  if (options.model_descriptions.empty()) return false;
 
-  // Load models
+  // Init models
   models.clear();
   rest_models_map.clear();
-  for (auto& model_description : model_descriptions) {
-    Model* model = Model::load(model_description.file.c_str());
-    if (!model) return false;
+  for (auto& model_description : options.model_descriptions) {
+    unique_ptr<ifstream> is(new ifstream(model_description.file));
+    if (!is->is_open()) return false;
 
     // Store the model
-    models.emplace_back(model_description.rest_id, model_description.acknowledgements, model);
+    models.emplace_back(model_description.rest_id, model_description.acknowledgements, models.size(), is.release());
   }
+
+  // Create model loader
+  loader.reset(new model_loader(options.concurrent_limit));
+  for (auto&& model : models)
+    loader->add(&model);
+
+  // Check that models are loadable if requested
+  for (size_t i = 0; i < models.size(); i++)
+    if (options.check_models_loadable || (options.preload_default && i == 0)) {
+      if (!models[i].load()) return false;
+      models[i].fill_capabilities();
+      if (i || !options.preload_default) models[i].release();
+    }
+  if (options.preload_default && !loader->load(0)) return false;
 
   // Fill rest_models_map with model name and aliases
   for (auto& model : models) {
@@ -61,7 +76,7 @@ bool udpipe_service::init(const vector<model_description>& model_descriptions) {
     if (model.can_parse) json_models.value("parser");
     json_models.close();
   }
-  json_models.indent().close().indent().key("default_model").indent().value(model_descriptions.front().rest_id).finish(true);
+  json_models.indent().close().indent().key("default_model").indent().value(options.default_model).finish(true);
 
   return true;
 }
@@ -80,12 +95,15 @@ bool udpipe_service::handle(microrestd::rest_request& req) {
 }
 
 // Load selected model
-const udpipe_service::model_info* udpipe_service::load_rest_model(const string& rest_id, string& error) {
+udpipe_service::loaded_model* udpipe_service::load_rest_model(const string& rest_id, string& error) {
   auto model_it = rest_models_map.find(rest_id);
   if (model_it == rest_models_map.end())
     return error.assign("Requested model '").append(rest_id).append("' does not exist.\n"), nullptr;
 
-  return model_it->second;
+  if (!loader->load(model_it->second->loader_id))
+    return error.assign("Cannot load required model (UDPipe server internal error)!"), nullptr;
+
+  return new loaded_model(model_it->second, loader.get());
 }
 
 // REST service
@@ -119,14 +137,14 @@ bool udpipe_service::handle_rest_process(microrestd::rest_request& req) {
 
   string error;
   auto rest_id = get_rest_model_id(req);
-  auto model = load_rest_model(rest_id, error);
-  if (!model) return req.respond_error(error);
+  unique_ptr<loaded_model> loaded(load_rest_model(rest_id, error));
+  if (!loaded) return req.respond_error(error);
 
   auto& data = get_data(req, error); if (!error.empty()) return req.respond_error(error);
   bool tokenizer = false;
-  unique_ptr<input_format> input(get_input_format(req, model, tokenizer, error)); if (!input) return req.respond_error(error);
-  auto& tagger = get_tagger(req, model, error); if (!error.empty()) return req.respond_error(error);
-  auto& parser = get_parser(req, model, error); if (!error.empty()) return req.respond_error(error);
+  unique_ptr<input_format> input(get_input_format(req, loaded->model, tokenizer, error)); if (!input) return req.respond_error(error);
+  auto& tagger = get_tagger(req, loaded->model, error); if (!error.empty()) return req.respond_error(error);
+  auto& parser = get_parser(req, loaded->model, error); if (!error.empty()) return req.respond_error(error);
   unique_ptr<output_format> output(get_output_format(req, error)); if (!output) return req.respond_error(error);
 
   // Try loading the input if tokenizer is not used
@@ -136,6 +154,8 @@ bool udpipe_service::handle_rest_process(microrestd::rest_request& req) {
     while (input->next_sentence(s, error)) {}
     if (!error.empty())
       return req.respond_error(error.insert(0, "Cannot read input data: ").append("\n"));
+
+    input->reset_document();
   }
 
   input->set_text(data);
@@ -193,8 +213,8 @@ bool udpipe_service::handle_rest_process(microrestd::rest_request& req) {
 
   class generator : public rest_response_generator {
    public:
-    generator(const model_info* model, input_format* input, const string& tagger, const string& parser, output_format* output)
-        : rest_response_generator(model), input(input), tagger(tagger), parser(parser), output(output) {}
+    generator(loaded_model* loaded, input_format* input, const string& tagger, const string& parser, output_format* output)
+        : rest_response_generator(loaded->model), loaded(loaded), input(input), tagger(tagger), parser(parser), output(output) {}
 
     bool generate() {
       if (!input->next_sentence(s, error)) {
@@ -208,9 +228,9 @@ bool udpipe_service::handle_rest_process(microrestd::rest_request& req) {
       }
 
       if (tagger != "none")
-        model->model->tag(s, tagger, error);
+        loaded->model->model->tag(s, tagger, error);
       if (parser != "none")
-        model->model->parse(s, parser, error);
+        loaded->model->model->parse(s, parser, error);
 
       output->write_sentence(s, os);
       json.value(os.str(), true);
@@ -223,6 +243,7 @@ bool udpipe_service::handle_rest_process(microrestd::rest_request& req) {
     sentence s;
     string error;
     ostringstream os;
+    unique_ptr<loaded_model> loaded;
     unique_ptr<input_format> input;
     const string& tagger;
     const string& parser;
@@ -257,7 +278,7 @@ input_format* udpipe_service::get_input_format(microrestd::rest_request& req, co
   auto tokenizer_it = req.params.find("tokenizer");
   if (tokenizer_it != req.params.end()) {
     if (!model->can_tokenize) return error.assign("The required model does not contain a tokenizer!"), nullptr;
-    input_format* tokenizer = model->model->new_tokenizer(Model::DEFAULT);
+    input_format* tokenizer = model->model->new_tokenizer(tokenizer_it->second);
     if (!tokenizer) return error.assign("Cannot construct a tokenizer instance!"), nullptr;
     return is_tokenizer = true, tokenizer;
   }

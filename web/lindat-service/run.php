@@ -9,6 +9,7 @@ Documentation</a> and the models are described in the
 </p>
 
 <script type="text/javascript"><!--
+  var models = {};
   var input_file_content = null;
   var output_file_content = null;
   var output_file_table = null;
@@ -28,8 +29,15 @@ Documentation</a> and the models are described in the
     }
 
     var options = {model: model, data: text};
-    var input = jQuery('input[name=option_input]:checked:visible').val();
-    if (input && input == "tokenizer") options.tokenizer = ""; else options.input = input ? input : "conllu";
+    var input = jQuery('input[name=option_input]:checked').val();
+    if (input && input == "tokenizer") {
+      options.tokenizer = "";
+      var opts = ["presegmented", "ranges", "normalized_spaces"];
+      for (var i in opts)
+        if (jQuery("#tokenizer_" + opts[i]).prop('checked')) options.tokenizer += (options.tokenizer ? ";" : "") + opts[i];
+    } else {
+      options.input = input ? input : "conllu";
+    }
     if (jQuery('#tagger').prop('checked')) options.tagger = "";
     if (jQuery('#parser').prop('checked')) options.parser = "";
 
@@ -177,15 +185,55 @@ Documentation</a> and the models are described in the
   jQuery(document).on('show.bs.tab', '#output_table_link', showTable);
   jQuery(document).on('show.bs.tab', '#output_tree_link', showTree);
 
+  function inputChanged() {
+    var input = jQuery('input[name=option_input]:checked').val();
+    if (input == "tokenizer")
+      jQuery('#tokenizer_options').show();
+    else
+      jQuery('#tokenizer_options').hide();
+  }
+
+  function updateModels() {
+    var family = jQuery('input[name=family]:checked').val();
+    var suffix_match = new RegExp(family + ".*$");
+
+    var czech_model = '';
+    for (var model in models)
+      if (model.indexOf(family) != -1)
+        if (model.startsWith("czech")) {
+          czech_model = model;
+          break;
+        }
+
+    var models_list = '';
+    var current_language = '';
+    for (var model in models) {
+      var family_index = model.indexOf(family);
+      if (family_index == -1) continue;
+      var treebank = model.substr(0, family_index);
+
+      var new_language = false;
+      if (!current_language || !treebank.startsWith(current_language)) {
+        new_language = true;
+        current_language = treebank;
+      }
+
+      models_list += "<option data-content='<span style=\"display: inline-block; width: " + (new_language ? "2.5" : "3.5") + "em\"><img src=\"flags/" + treebank + ".png\" style=\"height: 1em\"></span>" + model + "'" + ((czech_model ? model == czech_model : !models_list) ? "selected" : "") + ">" + model + "</option>";
+    }
+    jQuery('#model').html(models_list);
+    jQuery('#model').selectpicker('refresh');
+  }
+
   jQuery(document).ready(function() {
     jQuery.ajax('//lindat.mff.cuni.cz/services/udpipe/api/models',
                 {dataType: "json", success: function(json) {
-      var models_list = '';
-      for (var model in json.models)
-          models_list += "<option" + (models_list ? "" : " selected") + ">" + model + "</option>";
-      jQuery('#model').html(models_list);
+      models = json.models;
+      updateModels();
     }, complete: function() {
-      if (!jQuery('#model').html()) {
+      if (jQuery('#model').html()) {
+        fillUsingParams({"#model": "model", "#input": "data"});
+        if (jQuery('#input').val()) doSubmit();
+      } else {
         jQuery('#error').text("Cannot obtain the list of models from the service.").show();
       }
     }});
@@ -208,21 +256,14 @@ Documentation</a> and the models are described in the
       <div class="form-group row">
         <label class="col-sm-2 control-label">Model:</label>
         <div class="col-sm-10">
-          <label class="radio-inline"><input name="modelset" type="radio" value="ud1.2" checked />Universal Dependencies 1.2 (<a href="http://ufal.mff.cuni.cz/udpipe/users-manual#universal_dependencies_12_models">description</a>)</label>
+          <label class="radio-inline"><input name="family" type="radio" value="-ud-2.0-1" onchange="updateModels()" checked />UD 2.0 (<a href="http://ufal.mff.cuni.cz/udpipe/users-manual#universal_dependencies_20_models">description</a>)</label>
+          <label class="radio-inline"><input name="family" type="radio" value="-ud-2.0-conll17-" onchange="updateModels()" />CoNLL17 Baseline UD 2.0 (<a href="http://ufal.mff.cuni.cz/udpipe/users-manual#conll17_shared_task_baseline_ud_20_models">description</a>)</label>
+          <label class="radio-inline"><input name="family" type="radio" value="-ud-1.2-" onchange="updateModels()" />UD 1.2 (<a href="http://ufal.mff.cuni.cz/udpipe/users-manual#universal_dependencies_12_models">description</a>)</label>
         </div>
       </div>
       <div class="form-group row">
         <div class="col-sm-offset-2 col-sm-10">
-          <select id="model" class="form-control"></select>
-        </div>
-      </div>
-      <div class="form-group row">
-        <label class="col-sm-2 control-label">Input:</label>
-        <div class="col-sm-10">
-          <label title="Tokenize input using a tokenizer" class="radio-inline" id="option_input_tokenizer"><input name="option_input" type="radio" value="tokenizer" checked/>Plain text</label>
-          <label title="The CoNLL-U format" class="radio-inline" id="option_input_conllu"><input name="option_input" type="radio" value="conllu" />CoNLL-U</label>
-          <label title="Sentence on a line, words separated by spaces" class="radio-inline" id="option_input_horizontal"><input name="option_input" type="radio" value="horizontal" />Horizontal</label>
-          <label title="Word on a line, empty line denoting end of sentence" class="radio-inline" id="option_input_vertical"><input name="option_input" type="radio" value="vertical" />Vertical</label>
+          <select id="model" class="selectpicker form-control" data-live-search="true"></select>
         </div>
       </div>
       <div class="form-group row">
@@ -230,6 +271,33 @@ Documentation</a> and the models are described in the
         <div class="col-sm-10">
           <label class="checkbox-inline" title="Perform POS tagging an lemmatization"><input type="checkbox" id="tagger" checked>Tag and Lemmatize</label>
           <label class="checkbox-inline" title="Perform dependency parsing"><input type="checkbox" id="parser" checked>Parse</label>
+        </div>
+      </div>
+      <div class="panel panel-default">
+        <div class="panel-heading" role="tab" id="advancedHeading">
+          <div class="collapsed" role="button" data-toggle="collapse" href="#advancedContent" aria-expanded="false" aria-controls="advancedContent">
+            <span class="glyphicon glyphicon-triangle-bottom" aria-hidden="true"></span> Advanced Options
+          </div>
+        </div>
+        <div id="advancedContent" class="panel-collapse collapse" role="tabpanel" aria-labelledby="advancedHeading">
+          <div class="form-group row">
+            <label class="col-sm-2 control-label">Input <a href="//ufal.mff.cuni.cz/udpipe/users-manual#run_udpipe_input">[?]</a>:</label>
+            <div class="col-sm-10">
+              <label title="Tokenize input using a tokenizer" class="radio-inline" id="option_input_tokenizer"><input name="option_input" type="radio" value="tokenizer" onchange="inputChanged()" checked/>Tokenize plain text</label>
+              <label title="The CoNLL-U format" class="radio-inline" id="option_input_conllu"><input name="option_input" type="radio" value="conllu" onchange="inputChanged()" />CoNLL-U</label>
+              <label title="Sentence on a line, words separated by spaces" class="radio-inline" id="option_input_horizontal"><input name="option_input" type="radio" value="horizontal" onchange="inputChanged()" />Horizontal</label>
+              <label title="Word on a line, empty line denoting end of sentence" class="radio-inline" id="option_input_vertical"><input name="option_input" type="radio" value="vertical" onchange="inputChanged()" />Vertical</label>
+            </div>
+          </div>
+
+          <div class="form-group row" id="tokenizer_options">
+            <label class="col-sm-2 control-label">Tokenizer <a href="//ufal.mff.cuni.cz/udpipe/users-manual#run_udpipe_tokenizer">[?]</a>:</label>
+            <div class="col-sm-10">
+              <label class="checkbox-inline" title="Normalize spaces in input file"><input type="checkbox" id="tokenizer_normalized_spaces">Normalize spaces</label>
+              <label class="checkbox-inline" title="The input is already segmented"><input type="checkbox" id="tokenizer_presegmented">Presegmented input</label>
+              <label class="checkbox-inline" title="Save token ranges"><input type="checkbox" id="tokenizer_ranges">Save token ranges</label>
+            </div>
+          </div>
         </div>
       </div>
     </div>

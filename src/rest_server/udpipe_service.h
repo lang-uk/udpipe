@@ -16,6 +16,7 @@
 #include "model/model.h"
 #include "sentence/input_format.h"
 #include "sentence/output_format.h"
+#include "utils/threadsafe_resource_loader.h"
 
 namespace ufal {
 namespace udpipe {
@@ -33,7 +34,15 @@ class udpipe_service : public microrestd::rest_service {
         : rest_id(rest_id), file(file), acknowledgements(acknowledgements) {}
   };
 
-  bool init(const vector<model_description>& model_descriptions);
+  struct service_options {
+    vector<model_description> model_descriptions;
+    string default_model;
+    unsigned concurrent_limit;
+    bool preload_default;
+    bool check_models_loadable;
+  };
+
+  bool init(const service_options& options);
 
   virtual bool handle(microrestd::rest_request& req) override;
 
@@ -42,19 +51,37 @@ class udpipe_service : public microrestd::rest_service {
 
   // Models
   struct model_info {
-    model_info(const string& rest_id, const string& acknowledgements, Model* model)
-        : rest_id(rest_id), acknowledgements(acknowledgements), model(model) {
-      sentence s;
-      string error;
-      unique_ptr<input_format> tokenizer(model->new_tokenizer(Model::DEFAULT));
+    model_info(const string& rest_id, const string& acknowledgements, unsigned loader_id, istream* is)
+        : rest_id(rest_id), acknowledgements(acknowledgements), loader_id(loader_id), is(is), model(nullptr), can_tokenize(true), can_tag(true), can_parse(true) {}
 
-      can_tokenize = tokenizer.get() != nullptr;
-      can_tag = model->tag(s, Model::DEFAULT, error);
-      can_parse = model->parse(s, Model::DEFAULT, error);
+    bool load() {
+      if (!model) {
+        is->seekg(0);
+        model.reset(Model::load(*is));
+      }
+      return model != nullptr;
+    }
+
+    void release() {
+      model.reset();
+    }
+
+    void fill_capabilities() {
+      if (model) {
+        sentence s;
+        string error;
+        unique_ptr<input_format> tokenizer(model->new_tokenizer(Model::DEFAULT));
+
+        can_tokenize = tokenizer.get() != nullptr;
+        can_tag = model->tag(s, Model::DEFAULT, error);
+        can_parse = model->parse(s, Model::DEFAULT, error);
+      }
     }
 
     string rest_id;
     string acknowledgements;
+    unsigned loader_id;
+    unique_ptr<istream> is;
     unique_ptr<Model> model;
     bool can_tokenize;
     bool can_tag;
@@ -63,7 +90,17 @@ class udpipe_service : public microrestd::rest_service {
   vector<model_info> models;
   unordered_map<string, const model_info*> rest_models_map;
 
-  const model_info* load_rest_model(const string& rest_id, string& error);
+  typedef threadsafe_resource_loader<model_info> model_loader;
+  unique_ptr<model_loader> loader;
+
+  struct loaded_model {
+    const model_info* model;
+    model_loader* loader;
+
+    loaded_model(const model_info* model, model_loader* loader) : model(model), loader(loader) {}
+    ~loaded_model() { loader->release(model->loader_id); }
+  };
+  loaded_model* load_rest_model(const string& rest_id, string& error);
 
   // REST service
   class rest_response_generator : public microrestd::json_response_generator {
