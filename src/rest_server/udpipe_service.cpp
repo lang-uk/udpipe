@@ -156,8 +156,8 @@ bool udpipe_service::handle_process(microrestd::rest_request& req) {
 
   class PlaintextGenerator: public rest_response_generator {
   public:
-    PlaintextGenerator(const model_info* model, input_format* input, const string& tagger, const string& parser, output_format* output)
-        : rest_response_generator(model), input(input), tagger(tagger), parser(parser), output(output) {}
+    PlaintextGenerator(loaded_model* loaded, input_format* input, const string& tagger, const string& parser, output_format* output)
+        : rest_response_generator(loaded->model), loaded(loaded), input(input), tagger(tagger), parser(parser), output(output) {}
 
 
     virtual microrestd::string_piece current() const {
@@ -183,9 +183,9 @@ bool udpipe_service::handle_process(microrestd::rest_request& req) {
       }
 
       if (tagger != "none")
-        model->model->tag(s, tagger, error);
+        loaded->model->model->tag(s, tagger, error);
       if (parser != "none")
-        model->model->parse(s, parser, error);
+        loaded->model->model->parse(s, parser, error);
 
       output->write_sentence(s, os);
       buf += os.str();
@@ -199,6 +199,7 @@ bool udpipe_service::handle_process(microrestd::rest_request& req) {
     sentence s;
     string error;
     ostringstream os;
+    unique_ptr<loaded_model> loaded;
     unique_ptr<input_format> input;
     const string& tagger;
     const string& parser;
@@ -207,7 +208,7 @@ bool udpipe_service::handle_process(microrestd::rest_request& req) {
 
   class generator : public rest_response_generator {
    public:
-    generator(udpipe_service::loaded_model* loaded, input_format* input, const string& tagger, const string& parser, output_format* output)
+    generator(loaded_model* loaded, input_format* input, const string& tagger, const string& parser, output_format* output)
         : rest_response_generator(loaded->model), loaded(loaded), input(input), tagger(tagger), parser(parser), output(output) {}
 
     bool generate() {
