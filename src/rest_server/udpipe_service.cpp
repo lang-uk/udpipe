@@ -98,10 +98,12 @@ bool udpipe_service::handle(microrestd::rest_request& req) {
 udpipe_service::loaded_model* udpipe_service::load_rest_model(const string& rest_id, string& error) {
   auto model_it = rest_models_map.find(rest_id);
   if (model_it == rest_models_map.end())
-    return error.assign("Requested model '").append(rest_id).append("' does not exist.\n"), nullptr;
+    error.assign("Requested model '").append(rest_id).append("' does not exist.\n");
+    return nullptr;
 
   if (!loader->load(model_it->second->loader_id))
-    return error.assign("Cannot load required model (UDPipe server internal error)!"), nullptr;
+    error.assign("Cannot load required model (UDPipe server internal error)!");
+    return nullptr;
 
   return new loaded_model(model_it->second, loader.get());
 }
@@ -213,7 +215,7 @@ bool udpipe_service::handle_rest_process(microrestd::rest_request& req) {
 
   class generator : public rest_response_generator {
    public:
-    generator(loaded_model* loaded, input_format* input, const string& tagger, const string& parser, output_format* output)
+    generator(udpipe_service::loaded_model* loaded, input_format* input, const string& tagger, const string& parser, output_format* output)
         : rest_response_generator(loaded->model), loaded(loaded), input(input), tagger(tagger), parser(parser), output(output) {}
 
     bool generate() {
@@ -277,15 +279,18 @@ const string& udpipe_service::get_data(microrestd::rest_request& req, string& er
 input_format* udpipe_service::get_input_format(microrestd::rest_request& req, const model_info* model, bool& is_tokenizer, string& error) {
   auto tokenizer_it = req.params.find("tokenizer");
   if (tokenizer_it != req.params.end()) {
-    if (!model->can_tokenize) return error.assign("The required model does not contain a tokenizer!"), nullptr;
+    if (!model->can_tokenize) {
+      error.assign("The required model does not contain a tokenizer!");
+      return nullptr;
+    }
     input_format* tokenizer = model->model->new_tokenizer(tokenizer_it->second);
-    if (!tokenizer) return error.assign("Cannot construct a tokenizer instance!"), nullptr;
+    if (!tokenizer) { error.assign("Cannot construct a tokenizer instance!"); return nullptr; }
     return is_tokenizer = true, tokenizer;
   }
 
   auto& input = req.params.emplace("input", "conllu").first->second;
   auto input_format = input_format::new_input_format(input);
-  if (!input_format) return error.assign("Unknown input format '").append(input).append("'.\n"), nullptr;
+  if (!input_format) { error.assign("Unknown input format '").append(input).append("'.\n"); return nullptr;}
   return is_tokenizer = false, input_format;
 }
 
@@ -304,7 +309,7 @@ const string& udpipe_service::get_parser(microrestd::rest_request& req, const mo
 output_format* udpipe_service::get_output_format(microrestd::rest_request& req, string& error) {
   auto& output = req.params.emplace("output", "conllu").first->second;
   auto output_format = output_format::new_output_format(output);
-  if (!output_format) return error.assign("Unknown output format '").append(output).append("'.\n"), nullptr;
+  if (!output_format) { error.assign("Unknown output format '").append(output).append("'.\n"); return nullptr; }
   return output_format;
 }
 

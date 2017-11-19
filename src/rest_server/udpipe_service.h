@@ -93,6 +93,7 @@ class udpipe_service : public microrestd::rest_service {
   typedef threadsafe_resource_loader<model_info> model_loader;
   unique_ptr<model_loader> loader;
 
+public:
   struct loaded_model {
     const model_info* model;
     model_loader* loader;
