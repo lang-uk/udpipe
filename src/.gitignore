@@ -1,6 +1,6 @@
 .idea/workspace.xml
 .idea/.name
-cmake-build-*
+#cmake-build-*
 /.build/
 rest_server/udpipe_server
 libudpipe.*

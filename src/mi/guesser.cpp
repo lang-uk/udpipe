@@ -132,7 +132,7 @@ namespace institute
         }
       }
 
-#ifndef NDEBUG
+#ifdef DEBUG
       if (init_num_interps == o_lemmas.size()) {
         cerr << "Failed to analyze \"" << converter.to_bytes(form) << "\"" << endl;
       }
