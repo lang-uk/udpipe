@@ -2,23 +2,17 @@
 // Created by Москалевський on 4/10/17.
 //
 
-#ifndef SRC_STATIC_H
-#define SRC_STATIC_H
-
 #include <regex>
 #include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string.hpp>
 
-using std::wstring;
-using std::string;
-using std::wregex;
-using std::regex;
-using std::vector;
-
-namespace institute
-{
-  namespace mova
-  {
+namespace ufal {
+namespace udpipe {
+    using std::wstring;
+    using std::string;
+    using std::wregex;
+    using std::regex;
+    using std::vector;
 
     struct PrefixSpec
     {
@@ -865,7 +859,5 @@ namespace institute
         {L'0', L"двадцяти",    L"двадцять",  "~NUM~~Case=Loc|Number=Plur|NumType=Card"},
         {L'0', L"двадцятьох",  L"двадцять",  "~NUM~~Case=Loc|Number=Plur|NumType=Card"},
     };
-  }
-}
-
-#endif //SRC_STATIC_H
+} // namespace udpipe
+} // namespace ufal

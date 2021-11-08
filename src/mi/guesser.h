@@ -2,8 +2,6 @@
 // Created by Москалевський on 4/6/17.
 //
 
-#ifndef SRC_GUESSER_H
-#define SRC_GUESSER_H
 
 #include "utils/string_piece.h"
 #include "morphodita/morpho/morpho_dictionary.h"
@@ -14,20 +12,14 @@
 #include <iostream>
 #include <regex>
 
+namespace ufal {
+namespace udpipe {
+    using ufal::udpipe::morphodita::generic_lemma_addinfo;
+    using ufal::udpipe::morphodita::morpho_dictionary;
+    using ufal::udpipe::morphodita::tagged_lemma;
+    using namespace ufal::udpipe::utils;
 
-using ufal::udpipe::morphodita::generic_lemma_addinfo;
-using ufal::udpipe::morphodita::morpho_dictionary;
-using ufal::udpipe::morphodita::tagged_lemma;
-using namespace ufal::udpipe::utils;
-
-
-
-typedef morpho_dictionary<generic_lemma_addinfo> Dictionary;
-
-namespace institute
-{
-  namespace mova
-  {
+    typedef morpho_dictionary<generic_lemma_addinfo> Dictionary;
     struct TaggedLemma
     {
       string tag;
@@ -64,8 +56,5 @@ namespace institute
     private:
 
     };
-  }
-}
-
-
-#endif //SRC_GUESSER_H
+} // namespace udpipe
+} // namespace ufal

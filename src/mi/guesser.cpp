@@ -8,10 +8,8 @@
 #include <boost/iterator/filter_iterator.hpp>
 
 
-namespace institute
-{
-  namespace mova
-  {
+namespace ufal {
+namespace udpipe {
     ///////////////////////////////////////////////////////////////////////////
     void Guesser::analyze(vector<tagged_lemma>& o_lemmas, const char* i_form_bytes)
     {
@@ -227,5 +225,5 @@ namespace institute
     {
       this->dictionary = dictionary;
     }
-  }
-}
+} // namespace udpipe
+} // namespace ufal
